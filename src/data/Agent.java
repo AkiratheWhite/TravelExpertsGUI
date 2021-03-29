@@ -1,6 +1,10 @@
 package data;
 
-public class Agent {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class Agent implements Entity{
     /**
      * Parameters corresponding to the columns in the Agents table..
      */
@@ -40,67 +44,54 @@ public class Agent {
         AgencyId = agencyId;
     }
 
-    public int getAgentId() {
-        return AgentId;
+    public PreparedStatement CreateUpdateSQL(Connection connection) throws SQLException {
+
+        String sql = "UPDATE agents" +
+                " SET AgtFirstName=?, AgtMiddleInitial=?, AgtLastName=?, AgtBusPhone=?, AgtEmail=?, AgtPosition=?, AgencyId=?" +
+                " WHERE AgentId=?";
+        
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setString(1, this.getFirstName());
+        statement.setString(2, this.getMiddleInitial());
+        statement.setString(3, this.getLastName());
+        statement.setString(4, this.getBusPhone());
+        statement.setString(5, this.getEmail());
+        statement.setString(6, this.getPosition());
+        statement.setInt(7, this.getAgencyId());
+        statement.setInt(8, this.getAgentId());
+
+        return statement;
     }
 
-    public void setAgentId(int agentId) {
-        AgentId = agentId;
+    public int getAgentId() {
+        return AgentId;
     }
 
     public String getFirstName() {
         return FirstName;
     }
 
-    public void setFirstName(String firstName) {
-        FirstName = firstName;
-    }
-
     public String getMiddleInitial() {
         return MiddleInitial;
-    }
-
-    public void setMiddleInitial(String middleInitial) {
-        MiddleInitial = middleInitial;
     }
 
     public String getLastName() {
         return LastName;
     }
 
-    public void setLastName(String lastName) {
-        LastName = lastName;
-    }
-
     public String getBusPhone() {
         return BusPhone;
-    }
-
-    public void setBusPhone(String busPhone) {
-        BusPhone = busPhone;
     }
 
     public String getEmail() {
         return Email;
     }
 
-    public void setEmail(String email) {
-        Email = email;
-    }
-
     public String getPosition() {
         return Position;
     }
 
-    public void setPosition(String position) {
-        Position = position;
-    }
-
     public int getAgencyId() {
         return AgencyId;
-    }
-
-    public void setAgencyId(int agencyId) {
-        AgencyId = agencyId;
     }
 }

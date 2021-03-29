@@ -2,6 +2,7 @@ package app;
 
 import data.Agent;
 import data.MySQL;
+import data.SQLTableRow;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -9,6 +10,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Controller {
 
@@ -48,9 +53,18 @@ public class Controller {
      * Populates the Combobox with AgentIDs.
      */
     public void setIDs() {
-        try {
-            var AgentIds = FXCollections.observableArrayList(database.GetAgentsIds());
-            comboAgentID.getItems().addAll(AgentIds);
+        try (Connection connection = database.OpenConnection()) {
+
+            List<Integer> AgentIds = new ArrayList<>();
+            List<SQLTableRow> AgentIdColumn = new ArrayList<>();
+
+            SQLTableRow.CreateTable(database.Select("AgentId").Table("agents").Args("ORDER BY AgentId").ExecuteQueryWithArgs(connection), AgentIdColumn);
+
+            for (SQLTableRow row : AgentIdColumn) {
+                AgentIds.add((Integer) row.row.get("AgentId").getData());
+            }
+            comboAgentID.getItems().addAll(FXCollections.observableArrayList(AgentIds));
+
         } catch (Exception err) {
             System.out.println("Error populating Agent IDs.");
             System.out.println(err.getMessage());
@@ -62,17 +76,25 @@ public class Controller {
      */
     public void fetchAgentInfo() {
         int currentID = comboAgentID.getValue();
+        List<SQLTableRow> AgentInfo = new ArrayList<>();
 
-        Agent currentAgent = database.GetAgent(currentID);
+        try (Connection connection = database.OpenConnection()) {
 
-        txtAgentId.setText(Integer.toString(currentAgent.getAgentId()));
-        txtFirstName.setText(currentAgent.getFirstName());
-        txtMiddleInitial.setText(currentAgent.getMiddleInitial());
-        txtLastName.setText(currentAgent.getLastName());
-        txtBusPhone.setText(currentAgent.getBusPhone());
-        txtEmail.setText(currentAgent.getEmail());
-        txtPosition.setText(currentAgent.getPosition());
-        txtAgencyId.setText(Integer.toString(currentAgent.getAgencyId()));
+            SQLTableRow.CreateTable(database.Select("*").Table("agents").Args(String.format("WHERE AgentId=%d", currentID)).ExecuteQueryWithArgs(connection), AgentInfo);
+
+            txtAgentId.setText(AgentInfo.get(0).row.get("AgentId").toString());
+            txtFirstName.setText(AgentInfo.get(0).row.get("AgtFirstName").toString());
+            txtMiddleInitial.setText(AgentInfo.get(0).row.get("AgtMiddleInitial").toString());
+            txtLastName.setText(AgentInfo.get(0).row.get("AgtLastName").toString());
+            txtBusPhone.setText(AgentInfo.get(0).row.get("AgtBusPhone").toString());
+            txtEmail.setText(AgentInfo.get(0).row.get("AgtEmail").toString());
+            txtPosition.setText(AgentInfo.get(0).row.get("AgtPosition").toString());
+            txtAgencyId.setText(AgentInfo.get(0).row.get("AgencyId").toString());
+
+        } catch (Exception err) {
+            System.out.println("Error retrieving agent information.");
+            System.out.println(err.getMessage());
+        }
     }
 
     /**
@@ -82,7 +104,7 @@ public class Controller {
         btnEdit.setDisable(true);
         btnSave.setDisable(false);
 
-        for (Node node: agentInfo.getChildren()) {
+        for (Node node : agentInfo.getChildren()) {
             if (node instanceof TextField && node != txtAgentId) {
                 ((TextField) node).setEditable(true);
             }
@@ -93,28 +115,28 @@ public class Controller {
      * Saves changes made to an agent's information. Disables save button and re-enables edit button.
      */
     public void saveEdit() {
-        try {
-            Agent currentAgent = new Agent(
-                    Integer.parseInt(txtAgentId.getText()),
-                    txtFirstName.getText(),
-                    txtMiddleInitial.getText(),
-                    txtLastName.getText(),
-                    txtBusPhone.getText(),
-                    txtEmail.getText(),
-                    txtPosition.getText(),
-                    Integer.parseInt(txtAgencyId.getText())
-            );
+        Agent currentAgent = new Agent(
+                Integer.parseInt(txtAgentId.getText()),
+                txtFirstName.getText(),
+                txtMiddleInitial.getText(),
+                txtLastName.getText(),
+                txtBusPhone.getText(),
+                txtEmail.getText(),
+                txtPosition.getText(),
+                Integer.parseInt(txtAgencyId.getText())
+        );
 
-            database.UpdateAgent(currentAgent);
+        try (Connection connection = database.OpenConnection()) {
+            database.Table("agents").ExecuteUpdate(connection, currentAgent);
         } catch (Exception err) {
-            System.out.println("Error while attempting to save data.");
-            System.out.println(err.getLocalizedMessage());
+            System.out.println("Error retrieving agent information.");
+            System.out.println(err.getMessage());
         }
 
         btnSave.setDisable(true);
         btnEdit.setDisable(false);
 
-        for (Node node: agentInfo.getChildren()) {
+        for (Node node : agentInfo.getChildren()) {
             if (node instanceof TextField) {
                 ((TextField) node).setEditable(false);
             }
